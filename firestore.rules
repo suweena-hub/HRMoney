@@ -1,0 +1,366 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Core Security Primitives
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isOwner(ownerId) {
+      return isSignedIn() && request.auth.uid == ownerId;
+    }
+
+    function isAdmin() {
+      return isVerified() && (
+        request.auth.token.email == 'srisakhon11439@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isOptionalString(data, key, maxLen) {
+      return !(key in data) || (data[key] is string && data[key].size() <= maxLen);
+    }
+
+    // Entity 1: OrganizationSetting
+    function isValidOrganizationSetting(data) {
+      return data.keys().hasAll([
+        'id', 'ownerId', 'orgName', 'orgAddress', 'authorizedSignatory',
+        'signatoryPosition', 'defaultWithholdingTaxRate', 'createdAt', 'updatedAt'
+      ])
+      && data.keys().hasOnly([
+        'id', 'ownerId', 'orgName', 'orgAddress', 'orgTaxId', 'authorizedSignatory',
+        'signatoryPosition', 'defaultWitness1', 'defaultWitness2',
+        'defaultWithholdingTaxRate', 'createdAt', 'updatedAt'
+      ])
+      && isValidId(data.id)
+      && isValidId(data.ownerId)
+      && data.orgName is string && data.orgName.size() >= 1 && data.orgName.size() <= 200
+      && data.orgAddress is string && data.orgAddress.size() >= 1 && data.orgAddress.size() <= 400
+      && isOptionalString(data, 'orgTaxId', 40)
+      && data.authorizedSignatory is string && data.authorizedSignatory.size() >= 1 && data.authorizedSignatory.size() <= 160
+      && data.signatoryPosition is string && data.signatoryPosition.size() >= 1 && data.signatoryPosition.size() <= 160
+      && isOptionalString(data, 'defaultWitness1', 160)
+      && isOptionalString(data, 'defaultWitness2', 160)
+      && data.defaultWithholdingTaxRate is number
+      && data.defaultWithholdingTaxRate >= 0 && data.defaultWithholdingTaxRate <= 15
+      && data.createdAt is timestamp
+      && data.updatedAt is timestamp;
+    }
+
+    // Entity 2: Personnel
+    function isValidPersonnel(data) {
+      return data.keys().hasAll([
+        'id', 'ownerId', 'employeeCode', 'title', 'fullName', 'nationalId',
+        'address', 'position', 'department', 'employmentType',
+        'baseSalary', 'defaultAllowance', 'otHourlyRate', 'taxRate',
+        'socialSecurityRate', 'status', 'createdAt', 'updatedAt'
+      ])
+      && data.keys().hasOnly([
+        'id', 'ownerId', 'employeeCode', 'title', 'fullName', 'nationalId',
+        'birthDate', 'phone', 'email', 'address', 'position', 'department',
+        'employmentType', 'educationLevel', 'bankName', 'bankAccount',
+        'baseSalary', 'defaultAllowance', 'otHourlyRate', 'taxRate',
+        'socialSecurityRate', 'status', 'startDate', 'createdAt', 'updatedAt'
+      ])
+      && isValidId(data.id)
+      && isValidId(data.ownerId)
+      && data.employeeCode is string && data.employeeCode.size() >= 1 && data.employeeCode.size() <= 40
+      && data.title is string && data.title.size() >= 1 && data.title.size() <= 30
+      && data.fullName is string && data.fullName.size() >= 1 && data.fullName.size() <= 160
+      && data.nationalId is string && data.nationalId.size() >= 13 && data.nationalId.size() <= 20
+      && isOptionalString(data, 'birthDate', 20)
+      && isOptionalString(data, 'phone', 30)
+      && isOptionalString(data, 'email', 160)
+      && data.address is string && data.address.size() >= 1 && data.address.size() <= 400
+      && data.position is string && data.position.size() >= 1 && data.position.size() <= 160
+      && data.department is string && data.department.size() >= 1 && data.department.size() <= 160
+      && data.employmentType in ['จ้างเหมาบริการ', 'ลูกจ้างชั่วคราว', 'พนักงานราชการ', 'อัตราจ้างทั่วไป']
+      && isOptionalString(data, 'educationLevel', 120)
+      && isOptionalString(data, 'bankName', 100)
+      && isOptionalString(data, 'bankAccount', 40)
+      && data.baseSalary is number && data.baseSalary >= 0 && data.baseSalary <= 10000000
+      && data.defaultAllowance is number && data.defaultAllowance >= 0 && data.defaultAllowance <= 10000000
+      && data.otHourlyRate is number && data.otHourlyRate >= 0 && data.otHourlyRate <= 100000
+      && data.taxRate is number && data.taxRate >= 0 && data.taxRate <= 35
+      && data.socialSecurityRate is number && data.socialSecurityRate >= 0 && data.socialSecurityRate <= 10
+      && data.status in ['ปฏิบัติงาน', 'รอทำสัญญา', 'สิ้นสุดสัญญา']
+      && isOptionalString(data, 'startDate', 20)
+      && data.createdAt is timestamp
+      && data.updatedAt is timestamp;
+    }
+
+    // Entity 3: PayrollRecord
+    function isValidPayrollRecord(data) {
+      return data.keys().hasAll([
+        'id', 'ownerId', 'personnelId', 'personnelName', 'employeeCode', 'position',
+        'month', 'year', 'baseSalary', 'otHours', 'otAmount', 'allowance',
+        'absentDays', 'absentDeduction', 'otherDeduction', 'taxRate', 'taxAmount',
+        'socialSecurityAmount', 'grossIncome', 'totalDeduction', 'netPay',
+        'paymentStatus', 'createdAt', 'updatedAt'
+      ])
+      && data.keys().hasOnly([
+        'id', 'ownerId', 'personnelId', 'personnelName', 'employeeCode', 'position',
+        'month', 'year', 'baseSalary', 'otHours', 'otAmount', 'allowance',
+        'absentDays', 'absentDeduction', 'otherDeduction', 'taxRate', 'taxAmount',
+        'socialSecurityAmount', 'grossIncome', 'totalDeduction', 'netPay',
+        'paymentStatus', 'note', 'createdAt', 'updatedAt'
+      ])
+      && isValidId(data.id)
+      && isValidId(data.ownerId)
+      && isValidId(data.personnelId)
+      && data.personnelName is string && data.personnelName.size() >= 1 && data.personnelName.size() <= 200
+      && data.employeeCode is string && data.employeeCode.size() >= 1 && data.employeeCode.size() <= 40
+      && data.position is string && data.position.size() >= 1 && data.position.size() <= 160
+      && data.month is number && data.month >= 1 && data.month <= 12
+      && data.year is number && data.year >= 2000 && data.year <= 2700
+      && data.baseSalary is number && data.baseSalary >= 0 && data.baseSalary <= 10000000
+      && data.otHours is number && data.otHours >= 0 && data.otHours <= 500
+      && data.otAmount is number && data.otAmount >= 0 && data.otAmount <= 10000000
+      && data.allowance is number && data.allowance >= 0 && data.allowance <= 10000000
+      && data.absentDays is number && data.absentDays >= 0 && data.absentDays <= 31
+      && data.absentDeduction is number && data.absentDeduction >= 0 && data.absentDeduction <= 10000000
+      && data.otherDeduction is number && data.otherDeduction >= 0 && data.otherDeduction <= 10000000
+      && data.taxRate is number && data.taxRate >= 0 && data.taxRate <= 35
+      && data.taxAmount is number && data.taxAmount >= 0 && data.taxAmount <= 10000000
+      && data.socialSecurityAmount is number && data.socialSecurityAmount >= 0 && data.socialSecurityAmount <= 1000000
+      && data.grossIncome is number && data.grossIncome >= 0 && data.grossIncome <= 20000000
+      && data.totalDeduction is number && data.totalDeduction >= 0 && data.totalDeduction <= 20000000
+      && data.netPay is number && data.netPay >= 0 && data.netPay <= 20000000
+      && data.paymentStatus in ['รอเบิกจ่าย', 'อนุมัติจ่ายแล้ว']
+      && isOptionalString(data, 'note', 300)
+      && data.createdAt is timestamp
+      && data.updatedAt is timestamp;
+    }
+
+    // Entity 4: ServiceContract
+    function isValidServiceContract(data) {
+      return data.keys().hasAll([
+        'id', 'ownerId', 'personnelId', 'contractNumber', 'contractDate',
+        'startDate', 'endDate', 'durationMonths', 'monthlyFee', 'totalValue',
+        'orgName', 'orgAddress', 'employerRepresentative', 'employerPosition',
+        'contractorName', 'contractorNationalId', 'contractorAddress',
+        'positionTitle', 'department', 'workLocation', 'workingHours',
+        'scopeOfWork', 'paymentTerms', 'penaltyTerms', 'status',
+        'createdAt', 'updatedAt'
+      ])
+      && data.keys().hasOnly([
+        'id', 'ownerId', 'personnelId', 'contractNumber', 'contractDate',
+        'startDate', 'endDate', 'durationMonths', 'monthlyFee', 'totalValue',
+        'orgName', 'orgAddress', 'employerRepresentative', 'employerPosition',
+        'contractorName', 'contractorNationalId', 'contractorAddress', 'contractorPhone',
+        'positionTitle', 'department', 'workLocation', 'workingHours',
+        'scopeOfWork', 'paymentTerms', 'penaltyTerms', 'witness1', 'witness2',
+        'status', 'createdAt', 'updatedAt'
+      ])
+      && isValidId(data.id)
+      && isValidId(data.ownerId)
+      && isValidId(data.personnelId)
+      && data.contractNumber is string && data.contractNumber.size() >= 1 && data.contractNumber.size() <= 60
+      && data.contractDate is string && data.contractDate.size() >= 1 && data.contractDate.size() <= 20
+      && data.startDate is string && data.startDate.size() >= 1 && data.startDate.size() <= 20
+      && data.endDate is string && data.endDate.size() >= 1 && data.endDate.size() <= 20
+      && data.durationMonths is number && data.durationMonths >= 1 && data.durationMonths <= 120
+      && data.monthlyFee is number && data.monthlyFee >= 0 && data.monthlyFee <= 10000000
+      && data.totalValue is number && data.totalValue >= 0 && data.totalValue <= 500000000
+      && data.orgName is string && data.orgName.size() >= 1 && data.orgName.size() <= 200
+      && data.orgAddress is string && data.orgAddress.size() >= 1 && data.orgAddress.size() <= 400
+      && data.employerRepresentative is string && data.employerRepresentative.size() >= 1 && data.employerRepresentative.size() <= 160
+      && data.employerPosition is string && data.employerPosition.size() >= 1 && data.employerPosition.size() <= 160
+      && data.contractorName is string && data.contractorName.size() >= 1 && data.contractorName.size() <= 180
+      && data.contractorNationalId is string && data.contractorNationalId.size() >= 13 && data.contractorNationalId.size() <= 20
+      && data.contractorAddress is string && data.contractorAddress.size() >= 1 && data.contractorAddress.size() <= 400
+      && isOptionalString(data, 'contractorPhone', 30)
+      && data.positionTitle is string && data.positionTitle.size() >= 1 && data.positionTitle.size() <= 160
+      && data.department is string && data.department.size() >= 1 && data.department.size() <= 160
+      && data.workLocation is string && data.workLocation.size() >= 1 && data.workLocation.size() <= 240
+      && data.workingHours is string && data.workingHours.size() >= 1 && data.workingHours.size() <= 200
+      && data.scopeOfWork is list && data.scopeOfWork.size() >= 1 && data.scopeOfWork.size() <= 20
+      && data.scopeOfWork[0] is string && data.scopeOfWork[0].size() >= 1 && data.scopeOfWork[0].size() <= 300
+      && data.paymentTerms is string && data.paymentTerms.size() >= 1 && data.paymentTerms.size() <= 600
+      && data.penaltyTerms is string && data.penaltyTerms.size() >= 1 && data.penaltyTerms.size() <= 600
+      && isOptionalString(data, 'witness1', 160)
+      && isOptionalString(data, 'witness2', 160)
+      && data.status in ['ร่างสัญญา', 'รอลงนาม', 'มีผลบังคับใช้', 'สิ้นสุดสัญญา']
+      && data.createdAt is timestamp
+      && data.updatedAt is timestamp;
+    }
+
+    // Collection: orgSettings
+    match /orgSettings/{settingId} {
+      allow get: if isValidId(settingId) && (isOwner(existing().ownerId) || isAdmin());
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+
+      allow create: if isVerified()
+        && isValidId(settingId)
+        && isValidOrganizationSetting(incoming())
+        && incoming().id == settingId
+        && incoming().ownerId == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isVerified()
+        && isValidId(settingId)
+        && isValidOrganizationSetting(incoming())
+        && (isOwner(existing().ownerId) || isAdmin())
+        && incoming().id == existing().id
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'orgName', 'orgAddress', 'orgTaxId', 'authorizedSignatory',
+          'signatoryPosition', 'defaultWitness1', 'defaultWitness2',
+          'defaultWithholdingTaxRate', 'updatedAt'
+        ]);
+
+      allow delete: if isVerified() && isValidId(settingId) && (isOwner(existing().ownerId) || isAdmin());
+    }
+
+    // Collection: personnel
+    match /personnel/{personnelId} {
+      allow get: if isValidId(personnelId) && (isOwner(existing().ownerId) || isAdmin());
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+
+      allow create: if isVerified()
+        && isValidId(personnelId)
+        && isValidPersonnel(incoming())
+        && incoming().id == personnelId
+        && incoming().ownerId == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isVerified()
+        && isValidId(personnelId)
+        && isValidPersonnel(incoming())
+        && (isOwner(existing().ownerId) || isAdmin())
+        && incoming().id == existing().id
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'employeeCode', 'title', 'fullName', 'nationalId', 'birthDate',
+            'phone', 'email', 'address', 'position', 'department',
+            'employmentType', 'educationLevel', 'bankName', 'bankAccount',
+            'baseSalary', 'defaultAllowance', 'otHourlyRate', 'taxRate',
+            'socialSecurityRate', 'status', 'startDate', 'updatedAt'
+          ])
+        );
+
+      allow delete: if isVerified() && isValidId(personnelId) && (isOwner(existing().ownerId) || isAdmin());
+    }
+
+    // Collection: payrolls
+    match /payrolls/{payrollId} {
+      allow get: if isValidId(payrollId) && (isOwner(existing().ownerId) || isAdmin());
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+
+      allow create: if isVerified()
+        && isValidId(payrollId)
+        && isValidPayrollRecord(incoming())
+        && incoming().id == payrollId
+        && incoming().ownerId == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && exists(/databases/$(database)/documents/personnel/$(incoming().personnelId))
+        && get(/databases/$(database)/documents/personnel/$(incoming().personnelId)).data.ownerId == request.auth.uid;
+
+      allow update: if isVerified()
+        && isValidId(payrollId)
+        && isValidPayrollRecord(incoming())
+        && (isOwner(existing().ownerId) || isAdmin())
+        && incoming().id == existing().id
+        && incoming().ownerId == existing().ownerId
+        && incoming().personnelId == existing().personnelId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (existing().paymentStatus != 'อนุมัติจ่ายแล้ว' || isAdmin())
+        && (
+          isAdmin() ||
+          (
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'personnelName', 'employeeCode', 'position', 'month', 'year',
+              'baseSalary', 'otHours', 'otAmount', 'allowance',
+              'absentDays', 'absentDeduction', 'otherDeduction',
+              'taxRate', 'taxAmount', 'socialSecurityAmount',
+              'grossIncome', 'totalDeduction', 'netPay', 'paymentStatus',
+              'note', 'updatedAt'
+            ])
+          ) ||
+          (
+            incoming().paymentStatus == 'อนุมัติจ่ายแล้ว' &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['paymentStatus', 'updatedAt'])
+          )
+        );
+
+      allow delete: if isVerified() && isValidId(payrollId) && (isOwner(existing().ownerId) || isAdmin());
+    }
+
+    // Collection: contracts
+    match /contracts/{contractId} {
+      allow get: if isValidId(contractId) && (isOwner(existing().ownerId) || isAdmin());
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+
+      allow create: if isVerified()
+        && isValidId(contractId)
+        && isValidServiceContract(incoming())
+        && incoming().id == contractId
+        && incoming().ownerId == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && exists(/databases/$(database)/documents/personnel/$(incoming().personnelId))
+        && get(/databases/$(database)/documents/personnel/$(incoming().personnelId)).data.ownerId == request.auth.uid;
+
+      allow update: if isVerified()
+        && isValidId(contractId)
+        && isValidServiceContract(incoming())
+        && (isOwner(existing().ownerId) || isAdmin())
+        && incoming().id == existing().id
+        && incoming().ownerId == existing().ownerId
+        && incoming().personnelId == existing().personnelId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (existing().status != 'สิ้นสุดสัญญา' || isAdmin())
+        && (
+          isAdmin() ||
+          (
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'contractNumber', 'contractDate', 'startDate', 'endDate',
+              'durationMonths', 'monthlyFee', 'totalValue',
+              'orgName', 'orgAddress', 'employerRepresentative', 'employerPosition',
+              'contractorName', 'contractorNationalId', 'contractorAddress', 'contractorPhone',
+              'positionTitle', 'department', 'workLocation', 'workingHours',
+              'scopeOfWork', 'paymentTerms', 'penaltyTerms', 'witness1', 'witness2',
+              'status', 'updatedAt'
+            ])
+          ) ||
+          (
+            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+          )
+        );
+
+      allow delete: if isVerified() && isValidId(contractId) && (isOwner(existing().ownerId) || isAdmin());
+    }
+  }
+}

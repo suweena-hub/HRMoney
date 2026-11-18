@@ -1,0 +1,543 @@
+{
+  "entities": {
+    "OrganizationSetting": {
+      "title": "OrganizationSetting",
+      "description": "Agency and signatory configuration used in service contracts and payroll reports.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Document identifier matching owner UID.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "UID of the HR administrator owning this workspace.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "orgName": {
+          "type": "string",
+          "description": "Official organization or government agency name.",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "orgAddress": {
+          "type": "string",
+          "description": "Official address of the hiring agency.",
+          "minLength": 1,
+          "maxLength": 400
+        },
+        "orgTaxId": {
+          "type": "string",
+          "description": "Tax ID or agency code.",
+          "maxLength": 40
+        },
+        "authorizedSignatory": {
+          "type": "string",
+          "description": "Full name of the authorized contract signatory.",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "signatoryPosition": {
+          "type": "string",
+          "description": "Official title of the authorized signatory.",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "defaultWitness1": {
+          "type": "string",
+          "description": "Default first witness name.",
+          "maxLength": 160
+        },
+        "defaultWitness2": {
+          "type": "string",
+          "description": "Default second witness name.",
+          "maxLength": 160
+        },
+        "defaultWithholdingTaxRate": {
+          "type": "number",
+          "description": "Default withholding tax percentage (0, 1, or 3)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last update timestamp."
+        }
+      },
+      "required": [
+        "id",
+        "ownerId",
+        "orgName",
+        "orgAddress",
+        "authorizedSignatory",
+        "signatoryPosition",
+        "defaultWithholdingTaxRate",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Personnel": {
+      "title": "Personnel",
+      "description": "Personnel registry record including personal PII, position, and base compensation parameters.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "employeeCode": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 30
+        },
+        "fullName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "nationalId": {
+          "type": "string",
+          "minLength": 13,
+          "maxLength": 20
+        },
+        "birthDate": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "phone": {
+          "type": "string",
+          "maxLength": 30
+        },
+        "email": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "address": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 400
+        },
+        "position": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "department": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "employmentType": {
+          "type": "string",
+          "enum": ["จ้างเหมาบริการ", "ลูกจ้างชั่วคราว", "พนักงานราชการ", "อัตราจ้างทั่วไป"]
+        },
+        "educationLevel": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "bankName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "bankAccount": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "baseSalary": {
+          "type": "number"
+        },
+        "defaultAllowance": {
+          "type": "number"
+        },
+        "otHourlyRate": {
+          "type": "number"
+        },
+        "taxRate": {
+          "type": "number"
+        },
+        "socialSecurityRate": {
+          "type": "number"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["ปฏิบัติงาน", "รอทำสัญญา", "สิ้นสุดสัญญา"]
+        },
+        "startDate": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "ownerId",
+        "employeeCode",
+        "title",
+        "fullName",
+        "nationalId",
+        "address",
+        "position",
+        "department",
+        "employmentType",
+        "baseSalary",
+        "defaultAllowance",
+        "otHourlyRate",
+        "taxRate",
+        "socialSecurityRate",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "PayrollRecord": {
+      "title": "PayrollRecord",
+      "description": "Monthly salary and service-fee calculation record linked to a personnel member.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "personnelId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "personnelName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "employeeCode": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "position": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "month": {
+          "type": "number"
+        },
+        "year": {
+          "type": "number"
+        },
+        "baseSalary": {
+          "type": "number"
+        },
+        "otHours": {
+          "type": "number"
+        },
+        "otAmount": {
+          "type": "number"
+        },
+        "allowance": {
+          "type": "number"
+        },
+        "absentDays": {
+          "type": "number"
+        },
+        "absentDeduction": {
+          "type": "number"
+        },
+        "otherDeduction": {
+          "type": "number"
+        },
+        "taxRate": {
+          "type": "number"
+        },
+        "taxAmount": {
+          "type": "number"
+        },
+        "socialSecurityAmount": {
+          "type": "number"
+        },
+        "grossIncome": {
+          "type": "number"
+        },
+        "totalDeduction": {
+          "type": "number"
+        },
+        "netPay": {
+          "type": "number"
+        },
+        "paymentStatus": {
+          "type": "string",
+          "enum": ["รอเบิกจ่าย", "อนุมัติจ่ายแล้ว"]
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "ownerId",
+        "personnelId",
+        "personnelName",
+        "employeeCode",
+        "position",
+        "month",
+        "year",
+        "baseSalary",
+        "otHours",
+        "otAmount",
+        "allowance",
+        "absentDays",
+        "absentDeduction",
+        "otherDeduction",
+        "taxRate",
+        "taxAmount",
+        "socialSecurityAmount",
+        "grossIncome",
+        "totalDeduction",
+        "netPay",
+        "paymentStatus",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ServiceContract": {
+      "title": "ServiceContract",
+      "description": "Service employment contract (จ้างเหมาบริการ) linked to a personnel member, printable for wet signatures.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "personnelId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "contractNumber": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "contractDate": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20
+        },
+        "startDate": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20
+        },
+        "endDate": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20
+        },
+        "durationMonths": {
+          "type": "number"
+        },
+        "monthlyFee": {
+          "type": "number"
+        },
+        "totalValue": {
+          "type": "number"
+        },
+        "orgName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "orgAddress": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 400
+        },
+        "employerRepresentative": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "employerPosition": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "contractorName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 180
+        },
+        "contractorNationalId": {
+          "type": "string",
+          "minLength": 13,
+          "maxLength": 20
+        },
+        "contractorAddress": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 400
+        },
+        "contractorPhone": {
+          "type": "string",
+          "maxLength": 30
+        },
+        "positionTitle": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "department": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "workLocation": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "workingHours": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "scopeOfWork": {
+          "type": "array",
+          "description": "Bounded list of scope of work deliverables (max 20 items)."
+        },
+        "paymentTerms": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 600
+        },
+        "penaltyTerms": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 600
+        },
+        "witness1": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "witness2": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "status": {
+          "type": "string",
+          "enum": ["ร่างสัญญา", "รอลงนาม", "มีผลบังคับใช้", "สิ้นสุดสัญญา"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "ownerId",
+        "personnelId",
+        "contractNumber",
+        "contractDate",
+        "startDate",
+        "endDate",
+        "durationMonths",
+        "monthlyFee",
+        "totalValue",
+        "orgName",
+        "orgAddress",
+        "employerRepresentative",
+        "employerPosition",
+        "contractorName",
+        "contractorNationalId",
+        "contractorAddress",
+        "positionTitle",
+        "department",
+        "workLocation",
+        "workingHours",
+        "scopeOfWork",
+        "paymentTerms",
+        "penaltyTerms",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/orgSettings/{settingId}": {
+      "schema": { "$ref": "#/entities/OrganizationSetting" },
+      "description": "Workspace organization settings keyed by owner UID."
+    },
+    "/personnel/{personnelId}": {
+      "schema": { "$ref": "#/entities/Personnel" },
+      "description": "Personnel registry records owned by the authenticated HR user."
+    },
+    "/payrolls/{payrollId}": {
+      "schema": { "$ref": "#/entities/PayrollRecord" },
+      "description": "Monthly payroll records linked to a personnel record."
+    },
+    "/contracts/{contractId}": {
+      "schema": { "$ref": "#/entities/ServiceContract" },
+      "description": "Service employment contracts (จ้างเหมาบริการ) linked to a personnel record."
+    }
+  }
+}

@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+@layer base {
+  html {
+    font-family: "IBM Plex Sans Thai", "Public Sans", system-ui, -apple-system, sans-serif;
+    color: #0f172a;
+    background-color: #f8fafc;
+  }
+
+  .font-sarabun {
+    font-family: "Sarabun", "IBM Plex Sans Thai", serif;
+  }
+
+  .font-mono-num {
+    font-family: "JetBrains Mono", "IBM Plex Sans Thai", monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 18mm 18mm 18mm 20mm;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only-container {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: #ffffff !important;
+  }
+
+  .print-page-break-avoid {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
